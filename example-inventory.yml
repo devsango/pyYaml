@@ -1,0 +1,156 @@
+---
+# Instructions for adding a new machine:
+# - The order of fields should be:
+#   - owner
+#   - mclass
+#   - partition
+all:
+  vars:
+    ansible_python_interpreter: /usr/bin/python
+    machine_class:
+      class_1:
+        cpu: "Bronze_3104"
+        cpus: 12
+        boards: 1
+        sockets: 2
+        corespersocket: 6
+        threadspercore: 1
+        realmemory: 256000
+        gres: "gpu:rtx2080ti:4"
+      class_2:
+        cpu: "E5-2630"
+        cpus: 40
+        boards: 1
+        sockets: 2
+        corespersocket: 10
+        threadspercore: 2
+        realmemory: 128000
+        gres: "gpu:gtx1080ti:6"
+      class_3:
+        cpu: "Gold_5215"
+        cpus: 40
+        boards: 1
+        sockets: 2
+        corespersocket: 10
+        threadspercore: 2
+        realmemory: 256000
+        gres: "gpu:rtx2080ti:4"
+      class_4:
+        cpu: "Unknown"
+        cpus: 1
+        boards: 1
+        sockets: 1
+        corespersocket: 1
+        threadspercore: 1
+        realmemory: 1800
+        gres: "null"
+
+    slurm_clusters:
+      name: example-clusterhead
+      slurmctldhost: example-dbhost
+      accountingstoragehost: example-clusterhead.somedomain.com
+      slurm_partitions:
+        - name: eastern
+          preempt: "REQUEUE"
+          maxtime: "02:00:00"
+        - name: western
+          preempt: "REQUEUE"
+          maxtime: "12:00:00"
+        - name: project-a
+          preempt: "OFF"
+          maxtime: "24:00:00"
+        - name: project-b
+          preempt: "OFF"
+          maxtime: "24:00:00"
+        - name: project-c
+          preempt: "OFF"
+          maxtime: "24:00:00"
+
+  children:
+    # Submission nodes don't need any of the daemons installed.
+    #
+    # If a host functions as both a dev host for interactive software
+    # development and computation, and as a compute host, put it under both
+    # `submit` and `compute` groups. If it is only for submit and dev use,
+    # like a submit host but with more resources, and doesn't participate in
+    # any SLURM partitions, just to maintain some consistency within the
+    # inventory, it should go under `submit` only.
+    submit:
+      hosts:
+        project-a-submit-01.somedomain.com:
+          owner: project-a
+          mclass: class_4
+          partition: []
+        project-b-submit-01.somedomain.com:
+          owner: project-b
+          mclass: class_4
+          partition: []
+        project-c-submit-01.somedomain.com:
+          owner: project-c
+          mclass: class_4
+          partition: []
+
+    compute:
+      hosts:
+        project-a-submit-01.somedomain.com:
+          owner: project-a
+          mclass: class_4
+          partition:
+            - western
+            - project-a
+        project-a-01.somedomain.com:
+          owner: project-a
+          mclass: class_1
+          partition:
+            - eastern
+            - project-a
+        project-a-02.somedomain.com:
+          owner: project-a
+          mclass: class_1
+          partition:
+            - western
+            - project-a
+        project-b-01.somedomain.com:
+          owner: project-b
+          mclass: class_2
+          partition:
+            - eastern
+            - project-b
+        project-b-02.somedomain.com:
+          owner: project-b
+          mclass: class_2
+          partition:
+            - western
+            - project-b
+        project-c-submit-01.somedomain.com:
+          owner: project-c
+          mclass: class_4
+          partition:
+            - western
+            - project-c
+        project-c-01.somedomain.com:
+          owner: project-c
+          mclass: class_3
+          partition:
+            - eastern
+            - project-c
+        project-c-02.somedomain.com:
+          owner: project-c
+          mclass: class_3
+          partition:
+            - western
+            - project-c
+
+    controller:
+      hosts:
+        example-clusterhead.somedomain.com:
+          owner: (VM for controller/DB)
+          partition: []
+          mclass: class_4
+
+    db:
+      hosts:
+        example-dbhost.somedomain.com:
+          owner: (VM for controller/DB)
+          partition: []
+          mclass: class_4
